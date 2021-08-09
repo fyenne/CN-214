@@ -1,0 +1,98 @@
+---
+title: "bose_check"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+ 
+
+```{r}
+
+library(tidyverse)
+
+bos_jun_in = readxl::read_excel("./Bose June Inbound.xls", 
+                                col_names=T)
+bos_jun_ou = readxl::read_excel("./Bose June Outbound.xls",
+                                col_names = T, skip = 1)
+```
+
+
+```{r}
+bos_jun_ou$SHIP_DATE_TIME  = bos_jun_ou$SHIP_DATE_TIME %>% substr(1,10)
+bos_jun_ou$`TOTAL\nQTY` = as.numeric(bos_jun_ou$`TOTAL\nQTY`)
+bos_jun_ou
+
+
+
+
+yewu_outb = bos_jun_ou %>% 
+  group_by(SHIP_DATE_TIME) %>% 
+  summarise(sum(`TOTAL\nQTY`),n_distinct(SHIPMENT_ID)) 
+yewu_outb
+
+# aggregate(cbind(SHIPMENT_ID+`TOTAL\nQTY`)~SHIP_DATE_TIME,
+#           bos_jun_ou, c(n_distinct, sum))
+ 
+yewu_outb$SHIP_DATE_TIME = gsub("-","",yewu_outb$SHIP_DATE_TIME)
+yewu_outb$SHIP_DATE_TIME = as.numeric(yewu_outb$SHIP_DATE_TIME)
+```
+ 
+```{r}
+# bos_jun_in$`Receipt ID`
+bos_jun_in$`Close Date` = bos_jun_in$`Close Date` %>% substr(1,10)
+bos_jun_in %>% 
+  group_by(`Close Date`) %>% 
+  summarise(sum(`Total Quantity`), n_distinct(`Receipt ID`))
+
+```
+ 
+ 
+ 
+ ##  inbound checked there is no error in june. 
+ 
+ 
+```{r}
+#
+bos_bdp = read_csv("./bdp_214_bose.csv")
+names(bos_bdp) = names(bos_bdp) %>% substring(29, last = 1000 )
+
+bos_bdp = bos_bdp[, c("operation_day",
+                      "inbound_header_count",
+                      "inbound_receive_qty",
+                      "outbound_header_count",
+                      "outbound_shipped_qty")]
+
+bos_bdp = bos_bdp[order(bos_bdp$operation_day), ]
+merge(bos_bdp[,c(1,4,5)], yewu_outb, by.x = "operation_day",
+      by.y = "SHIP_DATE_TIME") %>% View()
+yewu_outb
+```
+ 
+```{r}
+nchar('dwd_wh_dsc_outbound_line_dtl_di.')
+bose_0601ou = read_csv("./bose_0601ou.csv")
+names(bose_0601ou) = names(bose_0601ou) %>% substring(33, last = 1000 )
+bose_0601ou$shipped_qty = as.numeric(bose_0601ou$shipped_qty)
+
+ 
+bose_0601ou$shipped_qty [is.na(bose_0601ou$shipped_qty )] <- 0
+
+bose_0601ou %>% 
+  group_by(wms_company_name) %>% 
+  summarise(sum(shipped_qty)) 
+
+
+n_distinct(bose_0601ou$order_id)
+setdiff(bose_0601ou$order_id, bos_jun_ou$SHIPMENT_ID)
+setdiff(bos_jun_ou$SHIPMENT_ID, bose_0601ou$order_id)
+
+
+bose_0601ou[bose_0601ou$order_id == "0324464528",] %>% View()
+
+bos_jun_ou[bos_jun_ou$SHIPMENT_ID == "0324472164",]
+
+```
+ 
+ 

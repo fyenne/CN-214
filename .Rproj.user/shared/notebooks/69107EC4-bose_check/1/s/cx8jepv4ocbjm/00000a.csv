@@ -1,0 +1,4 @@
+"0","bos_jun_ou = readxl::read_excel(""./Bose June Outbound.xls"",
+                                col_names = T, skip = 1)
+"
+"2","Expecting date in A6923 / R6923C1: got 'Page 1 of 1'"
